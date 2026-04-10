@@ -43,6 +43,31 @@ def check_web_coverage(state):
 
     return len(feedback) == 0, feedback
 
+def check_stance_balance(state):
+    feedback = []
+    web_results = state["retrieval_data"].get("web_raw_results", [])
+
+    from collections import defaultdict
+    by_tech = defaultdict(lambda: {"positive": 0, "negative": 0, "neutral": 0})
+    for item in web_results:
+        tech = item.get("technology", "UNKNOWN")
+        stance = item.get("stance", "neutral")
+        by_tech[tech][stance] += 1
+
+    for tech, counts in by_tech.items():
+        total = sum(counts.values())
+        if total == 0:
+            continue
+        pos_ratio = counts["positive"] / total
+        neg_ratio = counts["negative"] / total
+        # 한쪽이 80% 이상이면 편향으로 판단
+        if pos_ratio >= 0.8:
+            feedback.append(f"교차 근거 부족: {tech} 긍정 편향 ({int(pos_ratio*100)}%)")
+        elif neg_ratio >= 0.8:
+            feedback.append(f"교차 근거 부족: {tech} 부정 편향 ({int(neg_ratio*100)}%)")
+
+    return len(feedback) == 0, feedback
+
 
 def policy_checker(state):
     draft = state["draft_work"]["current_draft"]
@@ -51,12 +76,13 @@ def policy_checker(state):
     trl_ok, trl_fb = check_trl_policy(draft)
     rag_ok, rag_fb = check_rag_coverage(state)
     web_ok, web_fb = check_web_coverage(state)
+    stance_ok, stance_fb = check_stance_balance(state)
 
     state["draft_work"]["structure_passed"] = structure_ok
     state["draft_work"]["policy_passed"] = trl_ok
-    state["draft_work"]["evidence_balance_passed"] = rag_ok and web_ok
+    state["draft_work"]["evidence_balance_passed"] = rag_ok and web_ok and stance_ok
 
     state["supervisor_ctrl"]["review_feedback"] = (
-        structure_fb + trl_fb + rag_fb + web_fb
+        structure_fb + trl_fb + rag_fb + web_fb + stance_fb
     )
     return state

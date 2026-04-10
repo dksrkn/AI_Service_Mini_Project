@@ -22,6 +22,26 @@ def build_queries() -> List[str]:
     return queries
 
 
+def build_supplement_queries(missing_info_log: list) -> List[str]:
+    """Loop A 재진입 시 편향된 기술에 대해 반대 관점 보완 쿼리 생성"""
+    queries = []
+    for log in missing_info_log:
+        for tech in TARGET_TECHS:
+            if tech not in log:
+                continue
+            if "긍정 편향" in log:
+                # 긍정 편향 → 부정/한계 관점 보완
+                for comp in COMPETITORS:
+                    queries.append(f"{comp} {tech} failure risk limitation concern analyst")
+                    queries.append(f"{tech} technical challenge unsolved problem semiconductor")
+            elif "부정 편향" in log:
+                # 부정 편향 → 긍정/진척 관점 보완
+                for comp in COMPETITORS:
+                    queries.append(f"{comp} {tech} breakthrough progress achievement 2025")
+                    queries.append(f"{tech} success commercialization milestone semiconductor")
+    return queries
+
+
 def infer_stance(text: str) -> str:
     lower = text.lower()
     neg_keys = ["delay", "issue", "risk", "challenge", "limitation", "yield", "bottleneck"]
@@ -61,17 +81,35 @@ def detect_competitor(text: str):
 def web_search_agent(state):
     print("\n[Web Search Agent] started")
 
-    queries = build_queries()
-    print(f"[Web Search Agent] total queries = {len(queries)}")
+    loop_a_count = state["supervisor_ctrl"].get("loop_a_count", 0)
+    missing_logs = state["supervisor_ctrl"].get("missing_info_log", [])
 
-    all_results = []
+    if loop_a_count > 0 and missing_logs:
+        # 재검색: 편향 보완 쿼리만 실행
+        queries = build_supplement_queries(missing_logs)
+        print(f"[Web Search Agent] RETRY mode, supplement queries = {len(queries)}")
+    else:
+        # 최초 검색: 전체 쿼리 실행
+        queries = build_queries()
+        print(f"[Web Search Agent] total queries = {len(queries)}")
+
+    # 재검색 시 기존 결과에 누적, 최초 검색 시 새로 시작
+    if loop_a_count > 0:
+        all_results = state["retrieval_data"].get("web_raw_results", [])
+    else:
+        all_results = []
 
     for q in queries:
         try:
-            hits = tavily_search(q, max_results=4)
+            # 경쟁사 동향 쿼리는 6개월, 기술 현황은 1년
+            if any(comp in q for comp in COMPETITORS):
+                hits = tavily_search(q, max_results=4, days=180)
+            else:
+                hits = tavily_search(q, max_results=4, days=365)
+
             for hit in hits:
                 joined = f"{hit.get('title', '')} {hit.get('content', '')}"
-                techs = detect_technologies(joined)  # 단수 → 복수 반환
+                techs = detect_technologies(joined)
                 comp = detect_competitor(joined)
                 trl_label, trl_confidence, trl_reason = infer_trl_from_evidence(joined)
 

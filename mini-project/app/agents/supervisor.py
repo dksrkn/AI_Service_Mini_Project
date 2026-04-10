@@ -34,18 +34,29 @@ def supervisor_node(state):
 
     if evidence_problem and state["supervisor_ctrl"]["loop_a_count"] < 2:
         state["supervisor_ctrl"]["loop_a_count"] += 1
-        print("[Supervisor] evidence retry -> web_search_agent")
+        # 편향 정보를 missing_info_log에 저장해서 보완 쿼리 생성에 활용
+        for f in feedback:
+            if "교차 근거 부족" in f:
+                state["supervisor_ctrl"]["missing_info_log"].append(f)
+        print(f"[Supervisor] evidence retry -> web_search_agent "
+              f"(loop_a_count={state['supervisor_ctrl']['loop_a_count']})")
         state["supervisor_ctrl"]["next_agent"] = "web_search_agent"
         state["global_info"]["workflow_status"] = "IN_REVISION"
+        # draft 초기화해서 보완된 web 결과로 재작성하도록
+        state["draft_work"]["current_draft"] = ""
+        state["supervisor_ctrl"]["review_feedback"] = []
         return state
 
     if policy_problem and state["supervisor_ctrl"]["loop_b_count"] < 2:
         state["supervisor_ctrl"]["loop_b_count"] += 1
-        print("[Supervisor] policy retry -> draft_agent")
+        print(f"[Supervisor] policy retry -> draft_agent "
+              f"(loop_b_count={state['supervisor_ctrl']['loop_b_count']})")
         state["supervisor_ctrl"]["next_agent"] = "draft_agent"
         state["global_info"]["workflow_status"] = "IN_REVISION"
+        state["supervisor_ctrl"]["review_feedback"] = []
         return state
 
+    # 최대 재시도 초과 — fallback 처리
     for item in feedback:
         if "정보 부족" in item or "교차 근거 부족" in item:
             state["supervisor_ctrl"]["missing_info_log"].append(item)
