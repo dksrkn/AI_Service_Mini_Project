@@ -53,6 +53,17 @@ flowchart TD
     F --> E[END]
 ```
 
+## Retrieval 
+=== Retrieval Evaluation Summary ===
+Report: /Users/skax/skala/aiservice-mini/mini-project/outputs/reports/technology_strategy_report_20260410_164615.pdf
+Retriever mode: hybrid
+PDF references: ['2012.03112v5.pdf', 'Comparative Study of Thermal Dissipation in Increa.pdf', 'hbm.pdf']
+Evaluated queries: 5
+Hit Rate@1: 0.8000
+Hit Rate@3: 1.0000
+Hit Rate@5: 1.0000
+MRR: 0.9000
+
 ## Directory Structure
 
 ```text
@@ -75,3 +86,7 @@ mini-project/
 ├── requirements.txt
 └── README.md
 ```
+
+## Contributors
+- 배수정 : Prompt Engineering, Agent Design, PDF Parsing, Retrieval Agent
+- 안가은 : Prompt Engineering, Agent Design, PDF Parsing, Retrieval Agent
