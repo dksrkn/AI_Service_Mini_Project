@@ -58,7 +58,7 @@ flowchart TD
   F -->|문서 생성 결과 반환| S
   S -->|최종 승인| END[END]
 ```
-
+```
 ## Retrieval 
 === Retrieval Evaluation Summary ===
 Report: /Users/skax/skala/aiservice-mini/mini-project/outputs/reports/technology_strategy_report_20260410_164615.pdf
@@ -69,7 +69,7 @@ Hit Rate@1: 0.8000
 Hit Rate@3: 1.0000
 Hit Rate@5: 1.0000
 MRR: 0.9000
-
+```
 ## Directory Structure
 
 ```text
