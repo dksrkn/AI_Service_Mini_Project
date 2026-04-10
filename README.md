@@ -41,16 +41,22 @@ AI Service Mini Project: Semiconductor R&D Strategy Report Generation with Multi
 
 ```mermaid
 flowchart TD
-    U[User Query] --> S[Supervisor]
-    S --> R[RAG Agent]
-    R --> S
-    S --> W[Web Search Agent]
-    W --> S
-    S --> D[Draft Agent]
-    D --> P[Policy Checker]
-    P -->|Fail| S
-    P -->|Pass| F[Formatter]
-    F --> E[END]
+  U[User Query] --> S[Supervisor]
+  
+  S -->|문서 검색 요청| R[RAG Agent]
+  S -->|경쟁사 정보 검색 요청| W[Web Search Agent]
+  
+  R -->|문서 기반 Context 반환| S
+  W -->|웹 기반 Context 반환| S
+  
+  S -->|통합 Context 전달| D[Draft Generation Agent]
+  
+  D -->|초안 검토 요청| S
+  S -->|기준 미충족 시 수정 요청| D
+  
+  S -->|검증 OK: 문서화 요청| F[Formatting Node]
+  F -->|문서 생성 결과 반환| S
+  S -->|최종 승인| END[END]
 ```
 
 ## Retrieval 
