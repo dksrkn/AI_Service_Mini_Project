@@ -2,6 +2,7 @@ from app.retrieval.vectorstore import build_or_load_vectorstore
 from app.retrieval.document_loader import load_pdf_documents, split_documents
 from app.retrieval.hybrid_retriever import HybridRetriever
 from app.config import RAW_DOCS_DIR
+from app.utils.state_utils import append_agent_message
 
 
 TOPIC_QUERY_MAP = {
@@ -120,6 +121,11 @@ def rag_agent(state):
 
     state["retrieval_data"]["rag_raw_chunks"] = rag_chunks
     state["retrieval_data"]["rag_by_topic"] = rag_by_topic
+    append_agent_message(
+        state,
+        "rag_agent",
+        f"retrieved {len(rag_chunks)} document chunks across topics {list(rag_by_topic.keys())}",
+    )
 
     print(f"[RAG Agent] retrieved_docs(total) = {len(rag_chunks)}")
     print(f"[RAG Agent] rag_by_topic keys = {list(rag_by_topic.keys())}")

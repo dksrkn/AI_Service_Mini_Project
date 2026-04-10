@@ -6,6 +6,7 @@ import markdown
 from playwright.sync_api import sync_playwright
 
 from app.config import REPORT_DIR
+from app.utils.state_utils import append_agent_message
 
 
 def build_reference_markdown(state, draft: str) -> str:
@@ -189,7 +190,12 @@ def formatter(state):
 
     state["global_info"]["final_report_markdown"] = draft
     state["global_info"]["final_report_pdf_path"] = str(pdf_path)
-    state["global_info"]["workflow_status"] = "COMPLETED"
+    state["global_info"]["workflow_status"] = "FORMATTED"
+    append_agent_message(
+        state,
+        "formatter",
+        f"saved report artifacts to markdown={md_path.name}, html={html_path.name}, pdf={pdf_path.name}",
+    )
 
     print(f"[Formatting Node] markdown saved -> {md_path}")
     print(f"[Formatting Node] html saved -> {html_path}")

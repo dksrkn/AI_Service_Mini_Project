@@ -2,6 +2,7 @@ from typing import List
 from app.config import TARGET_TECHS, COMPETITORS
 from app.utils.tavily_utils import tavily_search
 from app.utils.trl_utils import infer_trl_from_evidence
+from app.utils.state_utils import append_agent_message
 
 
 def build_queries() -> List[str]:
@@ -78,6 +79,25 @@ def detect_competitor(text: str):
     return None
 
 
+def dedupe_results(results: list[dict]) -> list[dict]:
+    unique = []
+    seen = set()
+
+    for item in results:
+        key = (
+            item.get("technology", ""),
+            item.get("competitor", ""),
+            item.get("url", ""),
+            item.get("title", ""),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(item)
+
+    return unique
+
+
 def web_search_agent(state):
     print("\n[Web Search Agent] started")
 
@@ -98,6 +118,8 @@ def web_search_agent(state):
         all_results = state["retrieval_data"].get("web_raw_results", [])
     else:
         all_results = []
+
+    error_count = 0
 
     for q in queries:
         try:
@@ -135,9 +157,17 @@ def web_search_agent(state):
                     })
         except Exception as e:
             print(f"[Web Search Agent] error: {e}")
+            error_count += 1
             continue
 
+    all_results = dedupe_results(all_results)
     state["retrieval_data"]["web_raw_results"] = all_results
+    mode = "retry" if loop_a_count > 0 else "initial"
+    append_agent_message(
+        state,
+        "web_search_agent",
+        f"{mode} web search completed with {len(queries)} queries, {len(all_results)} collected results, {error_count} query errors",
+    )
     print(f"[Web Search Agent] results = {len(all_results)}")
     print("[Web Search Agent] finished")
     return state
